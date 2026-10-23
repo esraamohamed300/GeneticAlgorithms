@@ -2,9 +2,11 @@
 
 #include <memory>
 
+using namespace std;        
+
 class Chromosome {
 public:
-    virtual std::unique_ptr<Chromosome> clone() const = 0;
+    virtual unique_ptr<Chromosome> clone() const = 0;
 
     virtual ~Chromosome() = default;
 };

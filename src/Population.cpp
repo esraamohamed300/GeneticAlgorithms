@@ -2,37 +2,35 @@
 
 #include <stdexcept>
 #include <utility>
+using namespace std;
 
-//Add new individual to the population
 void Population::addIndividual(
-    std::unique_ptr<Chromosome> individual
+    unique_ptr<Chromosome> individual
 ) {
     if (!individual) {
-        throw std::invalid_argument(
+        throw invalid_argument(
             "Cannot add a null individual to the population."
         );
     }
 
-    individuals.push_back(std::move(individual));
+    individuals.push_back(move(individual));
 }
 
-//Return the number of individuals
-std::size_t Population::size() const {
+int Population::size() const {
     return individuals.size();
 }
 
-//Access an individual
-Chromosome& Population::getIndividual(std::size_t index) {
+Chromosome& Population::getIndividual(int index) {
     return *individuals.at(index);
 }
 
 const Chromosome& Population::getIndividual(
-    std::size_t index
+    int index
 ) const {
     return *individuals.at(index);
 }
 
-//Remove all individuals
+
 void Population::clear() {
     individuals.clear();
 }

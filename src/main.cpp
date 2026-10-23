@@ -13,162 +13,272 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <numeric>
 #include <random>
+#include <stdexcept>
+#include <type_traits>
+#include <string>
 #include <vector>
+#include <cstddef>
 
 using namespace std;
 
-// Sets up a benchmark CVRP instance:
-// 10 customers + 1 central depot (index 0).
-// 3 vehicles, each with capacity 45.0.
+
 CVRPInstance buildBenchmarkCVRP() {
     CVRPInstance inst;
     inst.numCustomers = 10;
     inst.numVehicles = 3;
     inst.capacity = 45.0;
 
-    // (x, y) coordinates for Depot (0) and Customers (1..10)
     inst.coords = {
-        {50.0, 50.0},  // 0: Central Depot
-        {20.0, 80.0},  // 1: Customer 1
-        {85.0, 75.0},  // 2: Customer 2
-        {30.0, 20.0},  // 3: Customer 3
-        {70.0, 15.0},  // 4: Customer 4
-        {15.0, 45.0},  // 5: Customer 5
-        {90.0, 40.0},  // 6: Customer 6
-        {40.0, 90.0},  // 7: Customer 7
-        {60.0, 85.0},  // 8: Customer 8
-        {25.0, 10.0},  // 9: Customer 9
-        {80.0, 25.0}   // 10: Customer 10
+        {50.0, 50.0},  
+        {20.0, 80.0},  
+        {85.0, 75.0},  
+        {30.0, 20.0},  
+        {70.0, 15.0},  
+        {15.0, 45.0},  
+        {90.0, 40.0},  
+        {40.0, 90.0},  
+        {60.0, 85.0},  
+        {25.0, 10.0},  
+        {80.0, 25.0}   
     };
-
-    // Demands for depot (0) and customers (1..10)
-    // Total demand = 113. Total vehicle capacity = 3 * 45 = 135.
+   
     inst.demands = {
-        0.0,   // 0: Depot
-        12.0,  // 1
-        15.0,  // 2
-        10.0,  // 3
-        14.0,  // 4
-        8.0,   // 5
-        11.0,  // 6
-        9.0,   // 7
-        13.0,  // 8
-        7.0,   // 9
-        14.0   // 10
+        0.0,   
+        12.0,  
+        15.0,  
+        10.0,  
+        14.0,  
+        8.0,   
+        11.0,  
+        9.0,   
+        13.0,  
+        7.0,   
+        14.0   
     };
 
     inst.buildDistanceMatrix();
     return inst;
 }
 
-int main() {
-    cout << "============================================================\n";
-    cout << "   GENETIC ALGORITHM TOOLBOX - PART 2: CVRP SOLVER DEMO\n";
-    cout << "============================================================\n";
 
-    // 1. Problem Instance Setup
-    CVRPInstance instance = buildBenchmarkCVRP();
-    CVRPFitnessEvaluator evaluator(instance, 500.0);  // 500 penalty per overloaded unit
-    const CVRPCodec& codec = evaluator.codec();
+template <typename T>
+T askValue(const string& label, T defaultValue, T minValue, T maxValue) {
+    while (true) {
+        cout << "  " << label << " [" << defaultValue << "]: ";
+        string line;
+        if (!getline(cin, line)) {
+            cout << "\n";
+            return defaultValue;  
+        }
+        if (line.find_first_not_of(" \t\r") == string::npos) {
+            return defaultValue;  
+        }
+        try {
+            size_t used = 0;
+            double parsed = stod(line, &used);
+            if (line.find_first_not_of(" \t\r", used) != string::npos) {
+                throw invalid_argument("trailing characters");
+            }
+            T value = static_cast<T>(parsed);
+            if (parsed < static_cast<double>(minValue) ||
+                parsed > static_cast<double>(maxValue) ||
+                (is_integral<T>::value && parsed != static_cast<double>(value))) {
+                throw out_of_range("range");
+            }
+            return value;
+        } catch (const exception&) {
+            cout << "    Invalid value. Enter a number between " << minValue
+                 << " and " << maxValue << ", or press Enter for the default.\n";
+        }
+    }
+}
 
-    cout << "Problem configuration:\n";
-    cout << "  - Customers        : " << instance.numCustomers << "\n";
-    cout << "  - Vehicles         : " << instance.numVehicles << "\n";
-    cout << "  - Vehicle Capacity : " << instance.capacity << "\n";
-    cout << "  - Total Demand     : 113.0\n";
-    cout << "  - Chromosome Model : Giant Tour Permutation (Length = "
-         << codec.permutationLength() << ")\n\n";
+InfeasibilityPolicy askPolicy(InfeasibilityPolicy defaultPolicy) {
+    while (true) {
+        cout << "  Infeasible-solution policy: 1 = Penalty, 2 = Reject, 3 = None ["
+             << (defaultPolicy == InfeasibilityPolicy::Penalty ? 1
+                 : defaultPolicy == InfeasibilityPolicy::Reject ? 2 : 3)
+             << "]: ";
+        string line;
+        if (!getline(cin, line)) {
+            cout << "\n";
+            return defaultPolicy;
+        }
+        if (line.find_first_not_of(" \t\r") == string::npos) return defaultPolicy;
+        if (line.find('1') != string::npos) return InfeasibilityPolicy::Penalty;
+        if (line.find('2') != string::npos) return InfeasibilityPolicy::Reject;
+        if (line.find('3') != string::npos) return InfeasibilityPolicy::None;
+        cout << "    Please enter 1, 2 or 3 (or press Enter for the default).\n";
+    }
+}
 
-    // 2. GA Hyperparameters
-    GAConfig config;
-    config.populationSize = 100;
-    config.generations = 150;
-    config.crossoverRate = 0.90;
-    config.mutationRate = 0.15;
+string policyName(InfeasibilityPolicy p) {
+    switch (p) {
+        case InfeasibilityPolicy::Penalty: return "Penalty (adaptive: feasible always ranks first)";
+        case InfeasibilityPolicy::Reject:  return "Reject (regenerate infeasible offspring)";
+        default:                           return "None (fitness used as returned)";
+    }
+}
+
+int main(int argc, char** argv) {
     
-
-    cout << "GA Toolbox Hyperparameters:\n";
-    cout << "  - Population Size  : " << config.populationSize << "\n";
-    cout << "  - Generations      : " << config.generations << "\n";
-    cout << "  - Selection Method : Tournament (Size = 3)\n";
-    cout << "  - Crossover Method : Order Crossover (OX, Rate = " << config.crossoverRate << ")\n";
-    cout << "  - Mutation Method  : Inversion Mutation (2-Opt, Rate = " << config.mutationRate << ")\n";
-    cout << "  - Replacement      : Generational with Elitism = 1\n";
-    cout << "------------------------------------------------------------\n";
-    cout << "Starting Genetic Algorithm Optimization...\n\n";
-
-    // 3. Connect Operators and Engine
-    auto selection = make_shared<TournamentSelection>(3);
-    auto crossover = make_shared<OrderCrossover>(config.crossoverRate);
-    auto mutation = make_shared<InversionMutation>(config.mutationRate);
-    auto replacement = make_shared<GenerationalReplacement>(1);  // Best individual always survives
-
-    FitnessFunction fitnessFn = evaluator.makeFitnessFunction(true);
-    FeasibilityFunction feasFn = evaluator.checker().asFunction();
-
-    GAEngine engine(config, fitnessFn, feasFn, crossover, mutation, selection, replacement);
-
-    // 4. Initialize Population with random CVRP giant tour permutations
-    mt19937 rng(42);  // Fixed seed for reproducible university demonstration
-    Population population;
-    for (int i = 0; i < config.populationSize; ++i) {
-        population.addIndividual(make_unique<IntegerChromosome>(codec.createInteger(rng)));
+    int trials = 10;
+    unsigned seed = 42;
+    bool askUser = true;
+    try {
+        vector<string> positional;
+        for (int i = 1; i < argc; ++i) {
+            const string arg = argv[i];
+            if (arg == "--defaults" || arg == "-d") askUser = false;
+            else positional.push_back(arg);
+        }
+        if (positional.size() > 0) trials = stoi(positional[0]);
+        if (positional.size() > 1) seed = static_cast<unsigned>(stoul(positional[1]));
+        if (trials < 1) throw invalid_argument("trials must be >= 1");
+    } catch (const exception&) {
+        cerr << "Usage: " << argv[0] << " [--defaults] [trials >= 1] [seed]\n";
+        return 2;
     }
 
-    // Helper to evaluate and find the best individual in current population
-    auto findBest = [&](const Population& pop) -> pair<unique_ptr<Chromosome>, double> {
-        double bestFit = -1.0;
-        size_t bestIdx = 0;
-        for (size_t i = 0; i < pop.size(); ++i) {
-            double f = fitnessFn(pop.getIndividual(i));
-            if (f > bestFit) {
-                bestFit = f;
-                bestIdx = i;
+    try {
+        cout << "============================================================\n";
+        cout << "   GENETIC ALGORITHM TOOLBOX - PART 2: CVRP SOLVER DEMO\n";
+        cout << "============================================================\n";
+
+       
+        CVRPInstance instance = buildBenchmarkCVRP();
+        CVRPFitnessEvaluator evaluator(instance, 500.0);  
+        const CVRPCodec& codec = evaluator.codec();
+
+        const double totalDemand = accumulate(
+            instance.demands.begin(), instance.demands.end(), 0.0);
+
+        cout << "Problem configuration:\n";
+        cout << "  - Customers        : " << instance.numCustomers << "\n";
+        cout << "  - Vehicles         : " << instance.numVehicles << "\n";
+        cout << "  - Vehicle Capacity : " << instance.capacity << "\n";
+        cout << "  - Total Demand     : " << totalDemand << "\n";
+        cout << "  - Chromosome Model : Giant Tour Permutation (Length = "
+             << codec.permutationLength() << ")\n\n";
+
+        
+        GAConfig config;
+        config.generations = 150;
+        config.mutationRate = 0.15;
+        config.infeasibilityPolicy = InfeasibilityPolicy::Penalty;  
+        int tournamentSize = 3;
+        int elitism = 1;
+
+       
+        if (askUser) {
+            cout << "GA settings - press Enter to keep the value in [brackets].\n";
+            config.populationSize = askValue<int>("Population size", config.populationSize, 2, 100000);
+            config.generations = askValue<int>("Generations", config.generations, 1, 1000000);
+            config.crossoverRate = askValue<double>("Crossover rate (0-1)", config.crossoverRate, 0.0, 1.0);
+            config.mutationRate = askValue<double>("Mutation rate (0-1)", config.mutationRate, 0.0, 1.0);
+            tournamentSize = askValue<int>("Tournament size", tournamentSize, 1, config.populationSize);
+            elitism = askValue<int>("Elitism (individuals kept each generation)", elitism, 0, config.populationSize);
+            config.infeasibilityPolicy = askPolicy(config.infeasibilityPolicy);
+            trials = askValue<int>("Number of independent trials", trials, 1, 100000);
+            seed = askValue<unsigned>("Random seed", seed, 0u, 4294967295u);
+            cout << "\n";
+        }
+        config.validate();  
+
+        cout << "GA Toolbox Hyperparameters:\n";
+        cout << "  - Population Size  : " << config.populationSize << "\n";
+        cout << "  - Generations      : " << config.generations << "\n";
+        cout << "  - Selection Method : Tournament (Size = " << tournamentSize << ")\n";
+        cout << "  - Crossover Method : Order Crossover (OX, Rate = " << config.crossoverRate << ")\n";
+        cout << "  - Mutation Method  : Inversion Mutation (Rate = " << config.mutationRate << ")\n";
+        cout << "  - Replacement      : Generational with Elitism = " << elitism << "\n";
+        cout << "  - Infeasible Sols  : " << policyName(config.infeasibilityPolicy) << "\n";
+        cout << "  - Trials / Seed    : " << trials << " / " << seed << "\n";
+        cout << "------------------------------------------------------------\n";
+
+        
+        auto selection = make_shared<TournamentSelection>(static_cast<int>(tournamentSize));
+        auto crossover = make_shared<OrderCrossover>(config.crossoverRate);
+        auto mutation = make_shared<InversionMutation>(config.mutationRate);
+        auto replacement = make_shared<GenerationalReplacement>(static_cast<int>(elitism));
+
+        FitnessFunction fitnessFn = evaluator.makeFitnessFunction(true);
+        FeasibilityFunction feasFn = evaluator.checker().asFunction();
+
+        GAEngine engine(config, fitnessFn, feasFn, crossover, mutation,
+                        selection, replacement);
+
+        IndividualFactory randomTour = [&](mt19937& rng) {
+            return make_unique<IntegerChromosome>(codec.createInteger(rng));
+        };
+
+        
+        Routes bestRoutes;
+        double bestDistance = 0.0;
+        bool haveFeasible = false;
+        int feasibleTrials = 0;
+
+        for (int trial = 1; trial <= trials; ++trial) {
+            mt19937 rng(seed + static_cast<unsigned>(trial) - 1u);
+            Population population = engine.createInitialPopulation(randomTour, rng);
+
+            GenerationCallback progress = nullptr;
+            if (trial == 1) {
+                cout << "Trial 1 convergence:\n";
+                progress = [&](int gen, const Chromosome& best, double fit,
+                               bool feasible) {
+                    if (gen % 25 != 0 && gen != config.generations) return;
+                    Routes r;
+                    codec.tryDecode(best, r);
+                    cout << "  Gen " << setw(3) << gen
+                         << " | Best Distance: " << setw(7) << fixed
+                         << setprecision(2) << evaluator.totalDistance(r)
+                         << " | Feasible: " << (feasible ? "YES" : "NO ")
+                         << " | Best Fitness: " << scientific << setprecision(3)
+                         << fit << "\n";
+                };
+            }
+
+            GAResult result = engine.run(population, rng, progress);
+
+            Routes routes;
+            codec.tryDecode(*result.best, routes);
+            const double distance = evaluator.totalDistance(routes);
+            const bool feasible = result.bestIsFeasible &&
+                                  evaluator.validateSolution(routes);
+
+            cout << "Trial " << setw(2) << trial << ": distance "
+                 << fixed << setprecision(2) << setw(8) << distance
+                 << " | feasible: " << (feasible ? "YES" : "NO") << "\n";
+
+            if (feasible) {
+                ++feasibleTrials;
+                if (!haveFeasible || distance < bestDistance) {
+                    haveFeasible = true;
+                    bestDistance = distance;
+                    bestRoutes = routes;
+                }
             }
         }
-        return {pop.getIndividual(bestIdx).clone(), bestFit};
-    };
 
-    auto [initialBestChrom, initialBestFit] = findBest(population);
-    Routes initialRoutes = codec.decode(static_cast<const IntegerChromosome&>(*initialBestChrom));
-    double initialDistance = evaluator.totalDistance(initialRoutes);
-
-    cout << "Initial Generation (Gen 0):\n";
-    cout << "  Best Distance : " << fixed << setprecision(2) << initialDistance
-         << " | Feasible: " << (evaluator.validateSolution(initialRoutes) ? "YES" : "NO") << "\n";
-    cout << "------------------------------------------------------------\n";
-
-    // 5. Run Evolutionary Generations
-    for (int gen = 1; gen <= config.generations; ++gen) {
-        engine.step(population, rng);
-
-        if (gen % 25 == 0 || gen == config.generations) {
-            auto [currentBest, fit] = findBest(population);
-            Routes r = codec.decode(static_cast<const IntegerChromosome&>(*currentBest));
-            double dist = evaluator.totalDistance(r);
-            bool feas = evaluator.validateSolution(r);
-
-            cout << "Gen " << setw(3) << gen
-                 << " | Best Distance: " << setw(7) << fixed << setprecision(2) << dist
-                 << " | Feasible: " << (feas ? "YES" : "NO ")
-                 << " | Best Fitness: " << scientific << setprecision(3) << fit << "\n";
+        cout << "------------------------------------------------------------\n";
+        if (!haveFeasible) {
+            cout << "No feasible solution was found in " << trials
+                 << " trial(s). Try more generations or a larger population.\n";
+            return 1;
         }
+
+        
+        cout << "Best feasible solution (" << feasibleTrials << " of " << trials
+             << " trials feasible):\n";
+        evaluator.printSolution(bestRoutes, cout);
+        cout << "============================================================\n";
+        return 0;
+
+    } catch (const exception& e) {
+        cerr << "Error: " << e.what() << "\n";
+        return 1;
     }
-
-    // 6. Decode and Display the Final Best Solution
-    auto [finalBestChrom, finalBestFit] = findBest(population);
-    Routes bestRoutes = codec.decode(static_cast<const IntegerChromosome&>(*finalBestChrom));
-    double finalDistance = evaluator.totalDistance(bestRoutes);
-
-    evaluator.printSolution(bestRoutes, cout);
-
-    double improvement = ((initialDistance - finalDistance) / initialDistance) * 100.0;
-    cout << "Optimization Performance:\n";
-    cout << "  - Initial Best Distance : " << fixed << setprecision(2) << initialDistance << "\n";
-    cout << "  - Final Best Distance   : " << fixed << setprecision(2) << finalDistance << "\n";
-    cout << "  - Cost Reduction        : " << fixed << setprecision(1) << improvement << "%\n";
-    cout << "============================================================\n";
-
-    return 0;
 }

@@ -1,9 +1,9 @@
 #pragma once
 
-// Minimal dependency-free test helpers (no external test framework needed).
 
 #include <iostream>
 #include <stdexcept>
+using namespace std;
 
 namespace testutil {
 inline int& failures() {
@@ -14,19 +14,19 @@ inline int& checks() {
     static int count = 0;
     return count;
 }
-}  // namespace testutil
+}  
 
 #define CHECK(cond)                                                          \
     do {                                                                     \
         ++testutil::checks();                                                \
         if (!(cond)) {                                                       \
             ++testutil::failures();                                          \
-            std::cerr << "FAILED " << __FILE__ << ":" << __LINE__ << "  "    \
+            cerr << "FAILED " << __FILE__ << ":" << __LINE__ << "  "    \
                       << #cond << '\n';                                      \
         }                                                                    \
     } while (false)
 
-// Passes only if `expr` throws exactly `ExceptionType` (or a subclass).
+
 #define CHECK_THROWS(expr, ExceptionType)                                    \
     do {                                                                     \
         ++testutil::checks();                                                \
@@ -39,7 +39,7 @@ inline int& checks() {
         }                                                                    \
         if (!threw_) {                                                       \
             ++testutil::failures();                                          \
-            std::cerr << "FAILED " << __FILE__ << ":" << __LINE__            \
+            cerr << "FAILED " << __FILE__ << ":" << __LINE__            \
                       << "  expected " #ExceptionType " from: " #expr        \
                       << '\n';                                               \
         }                                                                    \
@@ -49,13 +49,13 @@ inline int& checks() {
     do {                                                                     \
         const int before_ = testutil::failures();                            \
         fn();                                                                \
-        std::cout << (testutil::failures() == before_ ? "[ OK ] "            \
+        cout << (testutil::failures() == before_ ? "[ OK ] "            \
                                                       : "[FAIL] ")           \
-                  << #fn << std::endl;                                       \
+                  << #fn << endl;                                       \
     } while (false)
 
 inline int finishTests() {
-    std::cout << testutil::checks() << " checks, " << testutil::failures()
+    cout << testutil::checks() << " checks, " << testutil::failures()
               << " failed\n";
     return testutil::failures() == 0 ? 0 : 1;
 }

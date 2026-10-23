@@ -6,17 +6,51 @@
 #include <functional>
 #include <memory>
 #include <random>
+#include <vector>
+using namespace std;
 
 class CrossoverMethod;
 class MutationMethod;
 class SelectionMethod;
 class ReplacementMethod;
 
+
 using FitnessFunction =
-    std::function<double(const Chromosome&)>;
+    function<double(const Chromosome&)>;
+
 
 using FeasibilityFunction =
-    std::function<bool(const Chromosome&)>;
+    function<bool(const Chromosome&)>;
+
+using IndividualFactory =
+    function<unique_ptr<Chromosome>(mt19937&)>;
+
+
+using GenerationCallback = function<void(
+    int generation,
+    const Chromosome& best,
+    double bestFitness,
+    bool bestIsFeasible)>;
+
+struct GAResult {
+    
+    unique_ptr<Chromosome> best;
+
+    double bestFitness = 0.0;
+
+    
+    bool bestIsFeasible = false;
+
+    int generationsRun = 0;
+
+    
+    vector<double> bestFitnessHistory;
+};
+
+namespace detail {
+struct BestTracker;
+}
+
 
 class GAEngine {
 private:
@@ -24,10 +58,10 @@ private:
     FitnessFunction fitnessFunction;
     FeasibilityFunction feasibilityFunction;
 
-    std::shared_ptr<CrossoverMethod> crossover_;
-    std::shared_ptr<MutationMethod> mutation_;
-    std::shared_ptr<SelectionMethod> selection_;
-    std::shared_ptr<ReplacementMethod> replacement_;
+    shared_ptr<CrossoverMethod> crossover_;
+    shared_ptr<MutationMethod> mutation_;
+    shared_ptr<SelectionMethod> selection_;
+    shared_ptr<ReplacementMethod> replacement_;
 
 public:
     GAEngine(
@@ -36,20 +70,21 @@ public:
         FeasibilityFunction feasibility
     );
 
+    
     GAEngine(
         const GAConfig& config,
         FitnessFunction fitness,
         FeasibilityFunction feasibility,
-        std::shared_ptr<CrossoverMethod> crossover,
-        std::shared_ptr<MutationMethod> mutation,
-        std::shared_ptr<SelectionMethod> selection = nullptr,
-        std::shared_ptr<ReplacementMethod> replacement = nullptr
+        shared_ptr<CrossoverMethod> crossover,
+        shared_ptr<MutationMethod> mutation,
+        shared_ptr<SelectionMethod> selection = nullptr,
+        shared_ptr<ReplacementMethod> replacement = nullptr
     );
 
-    void setCrossover(std::shared_ptr<CrossoverMethod> crossover);
-    void setMutation(std::shared_ptr<MutationMethod> mutation);
-    void setSelection(std::shared_ptr<SelectionMethod> selection);
-    void setReplacement(std::shared_ptr<ReplacementMethod> replacement);
+    void setCrossover(shared_ptr<CrossoverMethod> crossover);
+    void setMutation(shared_ptr<MutationMethod> mutation);
+    void setSelection(shared_ptr<SelectionMethod> selection);
+    void setReplacement(shared_ptr<ReplacementMethod> replacement);
 
     const CrossoverMethod* getCrossover() const { return crossover_.get(); }
     const MutationMethod* getMutation() const { return mutation_.get(); }
@@ -60,6 +95,30 @@ public:
     const FitnessFunction& getFitnessFunction() const { return fitnessFunction; }
     const FeasibilityFunction& getFeasibilityFunction() const { return feasibilityFunction; }
 
-    // Performs one generational step on the given population.
-    void step(Population& population, std::mt19937& rng);
+    Population createInitialPopulation(const IndividualFactory& factory,
+                                       mt19937& rng) const;
+
+    
+    void step(Population& population, mt19937& rng);
+
+    
+    GAResult run(Population& population, mt19937& rng,
+                 const GenerationCallback& onGeneration = nullptr);
+
+    
+    static vector<double> applyInfeasibilityPolicy(
+        const vector<double>& rawFitness,
+        const vector<bool>& feasible,
+        const GAConfig& config);
+
+private:
+    void checkReady(const Population& population, const char* caller) const;
+
+    void evaluate(const Chromosome& individual, bool needFeasibility,
+                  double& fitness, bool& feasible) const;
+
+   
+    void evolve(Population& population, vector<double>& rawFitness,
+                vector<bool>& feasible, mt19937& rng,
+                detail::BestTracker* tracker);
 };

@@ -11,10 +11,6 @@
 
 using namespace std;
 
-// ----------------------------------------------------------------------------
-// BitFlipMutation Tests
-// ----------------------------------------------------------------------------
-
 void testBitFlipRateZero() {
     mt19937 rng(1);
     BitFlipMutation mut(0.0);
@@ -25,7 +21,7 @@ void testBitFlipRateZero() {
 
     CHECK(typed != nullptr);
     CHECK(typed->toString() == "10110");
-    CHECK(b.toString() == "10110");  // original untouched
+    CHECK(b.toString() == "10110");
 }
 
 void testBitFlipRateOneFlipsAll() {
@@ -43,21 +39,20 @@ void testBitFlipRateOneFlipsAll() {
 
 void testBitFlipIntermediateRate() {
     mt19937 rng(3);
-    BitFlipMutation mut(0.1);  // 10% flip rate
+    BitFlipMutation mut(0.1);
 
-    const size_t len = 2000;
+    const int len = 2000;
     BinaryChromosome b = BinaryChromosome::random(len, rng);
     auto mutated = mut.mutate(b, rng);
     auto* typed = static_cast<BinaryChromosome*>(mutated.get());
 
     CHECK(typed->isValid());
-    size_t diffs = 0;
-    for (size_t i = 0; i < len; ++i) {
+    int diffs = 0;
+    for (int i = 0; i < len; ++i) {
         if ((*typed)[i] != b[i]) {
             ++diffs;
         }
     }
-    // With 2000 bits and p = 0.1, expected diffs ~ 200 (allow 120..280)
     CHECK(diffs > 120 && diffs < 280);
 }
 
@@ -76,29 +71,22 @@ void testBitFlipEdgeCases() {
     mt19937 rng(5);
     BitFlipMutation mut(0.5);
 
-    // Empty
     BinaryChromosome empty(vector<uint8_t>{});
     auto mEmpty = mut.mutate(empty, rng);
     CHECK(static_cast<BinaryChromosome*>(mEmpty.get())->size() == 0);
 
-    // Length 1
     BinaryChromosome single({1});
     BitFlipMutation mutAlways(1.0);
     auto mSingle = mutAlways.mutate(single, rng);
     CHECK(static_cast<BinaryChromosome*>(mSingle.get())->toString() == "0");
 
-    // Invalid rates
     CHECK_THROWS(BitFlipMutation(-0.01), invalid_argument);
     CHECK_THROWS(BitFlipMutation(1.05), invalid_argument);
 }
 
-// ----------------------------------------------------------------------------
-// SwapMutation Tests
-// ----------------------------------------------------------------------------
-
 void testSwapPermutationPreservation() {
     mt19937 rng(42);
-    SwapMutation mut(1.0);  // always swap
+    SwapMutation mut(1.0);
 
     IntegerChromosome perm({1, 2, 3, 4, 5, 6, 7, 8}, 1, 8, true);
 
@@ -111,9 +99,8 @@ void testSwapPermutationPreservation() {
         CHECK(typed->isPermutation());
         CHECK(typed->isValid());
 
-        // Verify it differs at exactly 2 positions (since distinct indices are swapped)
         int diffs = 0;
-        for (size_t i = 0; i < 8; ++i) {
+        for (int i = 0; i < 8; ++i) {
             if ((*typed)[i] != perm[i]) {
                 ++diffs;
             }
@@ -137,7 +124,6 @@ void testSwapWorksOnFloatAndBinary() {
     mt19937 rng(8);
     SwapMutation mut(1.0);
 
-    // FloatChromosome
     FloatChromosome fc({0.1, 0.5, 0.9}, 0.0, 1.0);
     auto mfc = mut.mutate(fc, rng);
     auto* typedFc = dynamic_cast<FloatChromosome*>(mfc.get());
@@ -145,15 +131,13 @@ void testSwapWorksOnFloatAndBinary() {
     CHECK(typedFc->isValid());
     CHECK(typedFc->size() == 3);
 
-    // BinaryChromosome
     BinaryChromosome bc({1, 0, 0, 0});
     auto mbc = mut.mutate(bc, rng);
     auto* typedBc = dynamic_cast<BinaryChromosome*>(mbc.get());
     CHECK(typedBc != nullptr);
     CHECK(typedBc->isValid());
-    // Exactly one 1 bit remains
     int sum = 0;
-    for (size_t i = 0; i < 4; ++i) sum += (*typedBc)[i];
+    for (int i = 0; i < 4; ++i) sum += (*typedBc)[i];
     CHECK(sum == 1);
 }
 
@@ -161,7 +145,6 @@ void testSwapShortChromosomes() {
     mt19937 rng(9);
     SwapMutation mut(1.0);
 
-    // Length 0 and 1 must safely do nothing
     IntegerChromosome len0(vector<int>{}, 0, 5, false);
     auto m0 = mut.mutate(len0, rng);
     CHECK(static_cast<IntegerChromosome*>(m0.get())->size() == 0);
@@ -171,13 +154,9 @@ void testSwapShortChromosomes() {
     CHECK(static_cast<IntegerChromosome*>(m1.get())->genes() == len1.genes());
 }
 
-// ----------------------------------------------------------------------------
-// InversionMutation Tests
-// ----------------------------------------------------------------------------
-
 void testInversionPermutationPreservation() {
     mt19937 rng(101);
-    InversionMutation mut(1.0);  // always invert
+    InversionMutation mut(1.0);
 
     IntegerChromosome perm({1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 1, 10, true);
 
@@ -190,7 +169,6 @@ void testInversionPermutationPreservation() {
         CHECK(typed->isPermutation());
         CHECK(typed->isValid());
 
-        // Check all values 1..10 are present
         vector<int> sorted = typed->genes();
         sort(sorted.begin(), sorted.end());
         for (int v = 1; v <= 10; ++v) {
@@ -203,7 +181,6 @@ void testInversionReversesSlice() {
     mt19937 rng(55);
     InversionMutation mut(1.0);
 
-    // In-place mutation on known vector
     IntegerChromosome perm({1, 2, 3, 4, 5}, 1, 5, true);
     mut.mutateInPlace(perm, rng);
     CHECK(perm.isValid());

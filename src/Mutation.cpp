@@ -9,9 +9,7 @@
 
 using namespace std;
 
-// ----------------------------------------------------------------------------
-// BitFlipMutation
-// ----------------------------------------------------------------------------
+
 
 BitFlipMutation::BitFlipMutation(double mutationRate)
     : mutationRate_(mutationRate) {
@@ -37,17 +35,15 @@ void BitFlipMutation::mutateInPlace(Chromosome& individual, mt19937& rng) const 
     }
 
     uniform_real_distribution<double> dist01(0.0, 1.0);
-    size_t len = binary->size();
-    for (size_t i = 0; i < len; ++i) {
+    int len = binary->size();
+    for (int i = 0; i < len; ++i) {
         if (dist01(rng) < mutationRate_) {
             binary->flip(i);
         }
     }
 }
 
-// ----------------------------------------------------------------------------
-// SwapMutation
-// ----------------------------------------------------------------------------
+
 
 SwapMutation::SwapMutation(double mutationRate)
     : mutationRate_(mutationRate) {
@@ -80,15 +76,15 @@ void SwapMutation::mutateInPlace(Chromosome& individual, mt19937& rng) const {
         throw invalid_argument("SwapMutation: unsupported chromosome type.");
     }
 
-    size_t len = ic ? ic->size() : (fc ? fc->size() : bc->size());
+    int len = ic ? ic->size() : (fc ? fc->size() : bc->size());
     if (len < 2) {
-        return;  // cannot swap distinct positions on length 0 or 1
+        return;  
     }
 
-    // Pick two distinct indices i and j
-    uniform_int_distribution<size_t> dist(0, len - 1);
-    size_t i = dist(rng);
-    size_t j = dist(rng);
+ 
+    uniform_int_distribution<int> dist(0, len - 1);
+    int i = dist(rng);
+    int j = dist(rng);
     while (j == i) {
         j = dist(rng);
     }
@@ -102,9 +98,7 @@ void SwapMutation::mutateInPlace(Chromosome& individual, mt19937& rng) const {
     }
 }
 
-// ----------------------------------------------------------------------------
-// InversionMutation
-// ----------------------------------------------------------------------------
+
 
 InversionMutation::InversionMutation(double mutationRate)
     : mutationRate_(mutationRate) {
@@ -137,15 +131,15 @@ void InversionMutation::mutateInPlace(Chromosome& individual, mt19937& rng) cons
         throw invalid_argument("InversionMutation: unsupported chromosome type.");
     }
 
-    size_t len = ic ? ic->size() : (fc ? fc->size() : bc->size());
+    int len = ic ? ic->size() : (fc ? fc->size() : bc->size());
     if (len < 2) {
-        return;  // cannot invert sub-segment of length 0 or 1
+        return; 
     }
 
-    // Pick two cut points cut1 <= cut2
-    uniform_int_distribution<size_t> dist(0, len - 1);
-    size_t cut1 = dist(rng);
-    size_t cut2 = dist(rng);
+    
+    uniform_int_distribution<int> dist(0, len - 1);
+    int cut1 = dist(rng);
+    int cut2 = dist(rng);
     if (cut1 > cut2) {
         swap(cut1, cut2);
     }

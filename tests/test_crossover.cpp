@@ -11,13 +11,10 @@
 
 using namespace std;
 
-// ----------------------------------------------------------------------------
-// MultiPointCrossover Tests
-// ----------------------------------------------------------------------------
 
 void testMultiPointBinary() {
     mt19937 rng(42);
-    MultiPointCrossover cross2(2, 1.0);  // 2-point, 100% rate
+    MultiPointCrossover cross2(2, 1.0);  
 
     BinaryChromosome p1({0, 0, 0, 0, 0, 0, 0, 0});
     BinaryChromosome p2({1, 1, 1, 1, 1, 1, 1, 1});
@@ -37,12 +34,11 @@ void testMultiPointBinary() {
     CHECK(b1->isValid());
     CHECK(b2->isValid());
 
-    // Parents must NOT be modified
     CHECK(p1.toString() == "00000000");
     CHECK(p2.toString() == "11111111");
 
-    // Together, each bit index was swapped between complementary parents, so b1[i] + b2[i] == 1
-    for (size_t i = 0; i < 8; ++i) {
+  
+    for (int i = 0; i < 8; ++i) {
         CHECK((*b1)[i] + (*b2)[i] == 1);
     }
 }
@@ -63,7 +59,7 @@ void testMultiPointFloat() {
     CHECK(f1->isValid() && f2->isValid());
     CHECK(f1->lowerBound() == 0.0 && f1->upperBound() == 1.0);
 
-    for (size_t i = 0; i < 6; ++i) {
+    for (int i = 0; i < 6; ++i) {
         CHECK((*f1)[i] == 0.1 || (*f1)[i] == 0.9);
         CHECK((*f2)[i] == 0.1 || (*f2)[i] == 0.9);
     }
@@ -71,7 +67,7 @@ void testMultiPointFloat() {
 
 void testMultiPointFreeInteger() {
     mt19937 rng(99);
-    MultiPointCrossover cross1(1, 1.0);  // 1-point crossover
+    MultiPointCrossover cross1(1, 1.0);  
 
     IntegerChromosome p1({10, 10, 10, 10}, 0, 50, false);
     IntegerChromosome p2({20, 20, 20, 20}, 0, 50, false);
@@ -88,7 +84,7 @@ void testMultiPointFreeInteger() {
 
 void testMultiPointRateZeroClonesParents() {
     mt19937 rng(7);
-    MultiPointCrossover crossZero(2, 0.0);  // 0% rate
+    MultiPointCrossover crossZero(2, 0.0);  
 
     BinaryChromosome p1({0, 1, 0, 1});
     BinaryChromosome p2({1, 0, 1, 0});
@@ -108,46 +104,42 @@ void testMultiPointRejectsPermutationChromosomes() {
     IntegerChromosome perm1 = IntegerChromosome::randomPermutation(1, 6, rng);
     IntegerChromosome perm2 = IntegerChromosome::randomPermutation(1, 6, rng);
 
-    // Must throw because multi-point crossover breaks permutation invariants
+ 
     CHECK_THROWS(cross.cross(perm1, perm2, rng), invalid_argument);
 }
 
 void testMultiPointEdgeCases() {
     mt19937 rng(5);
-    MultiPointCrossover cross(5, 1.0);  // more points than length
+    MultiPointCrossover cross(5, 1.0);  
 
-    // Length 0 (empty)
+   
     BinaryChromosome empty1(vector<uint8_t>{});
     BinaryChromosome empty2(vector<uint8_t>{});
     auto [e1, e2] = cross.cross(empty1, empty2, rng);
     CHECK(e1->clone() != nullptr && static_cast<BinaryChromosome*>(e1.get())->size() == 0);
 
-    // Length 1
+   
     BinaryChromosome single1({1}), single2({0});
     auto [s1, s2] = cross.cross(single1, single2, rng);
     CHECK(static_cast<BinaryChromosome*>(s1.get())->size() == 1);
 
-    // Mismatched lengths
+   
     BinaryChromosome bLen2({0, 1}), bLen3({0, 1, 0});
     CHECK_THROWS(cross.cross(bLen2, bLen3, rng), invalid_argument);
 
-    // Invalid parameters
+   
     CHECK_THROWS(MultiPointCrossover(0, 0.9), invalid_argument);
     CHECK_THROWS(MultiPointCrossover(2, -0.1), invalid_argument);
     CHECK_THROWS(MultiPointCrossover(2, 1.1), invalid_argument);
 }
 
-// ----------------------------------------------------------------------------
-// OrderCrossover (OX) Tests
-// ----------------------------------------------------------------------------
+
 
 void testOXPreservesPermutationInvariants() {
     mt19937 rng(42);
     OrderCrossover ox(1.0);
 
-    // Classic textbook example:
-    // P1: [1, 2, 3, 4, 5, 6, 7, 8, 9]
-    // P2: [9, 8, 7, 6, 5, 4, 3, 2, 1]
+
     IntegerChromosome p1({1, 2, 3, 4, 5, 6, 7, 8, 9}, 1, 9, true);
     IntegerChromosome p2({9, 8, 7, 6, 5, 4, 3, 2, 1}, 1, 9, true);
 
@@ -162,7 +154,7 @@ void testOXPreservesPermutationInvariants() {
         CHECK(child1->isPermutation() && child2->isPermutation());
         CHECK(child1->isValid() && child2->isValid());
 
-        // Verify each number 1..9 appears exactly once
+       
         vector<int> g1 = child1->genes();
         vector<int> g2 = child2->genes();
         sort(g1.begin(), g1.end());
@@ -192,7 +184,7 @@ void testOXWithNegativeBounds() {
 
 void testOXRateZeroClonesParents() {
     mt19937 rng(88);
-    OrderCrossover ox(0.0);  // 0% crossover rate
+    OrderCrossover ox(0.0);  
 
     IntegerChromosome p1({1, 2, 3, 4}, 1, 4, true);
     IntegerChromosome p2({4, 3, 2, 1}, 1, 4, true);
@@ -209,17 +201,17 @@ void testOXRejectsNonPermutations() {
     mt19937 rng(10);
     OrderCrossover ox(1.0);
 
-    // Free integers (isPermutation == false)
+   
     IntegerChromosome free1({1, 2, 2, 4}, 1, 4, false);
     IntegerChromosome free2({4, 3, 2, 1}, 1, 4, false);
     CHECK_THROWS(ox.cross(free1, free2, rng), invalid_argument);
 
-    // Mismatched bounds
+    
     IntegerChromosome permA({1, 2, 3}, 1, 3, true);
     IntegerChromosome permB({2, 3, 4}, 2, 4, true);
     CHECK_THROWS(ox.cross(permA, permB, rng), invalid_argument);
 
-    // Incompatible types
+   
     BinaryChromosome bin({0, 1, 0});
     CHECK_THROWS(ox.cross(bin, permA, rng), invalid_argument);
 }
@@ -228,13 +220,13 @@ void testOXShortPermutations() {
     mt19937 rng(15);
     OrderCrossover ox(1.0);
 
-    // Length 1 permutation
+   
     IntegerChromosome pLen1({5}, 5, 5, true);
     auto [c1, c2] = ox.cross(pLen1, pLen1, rng);
     CHECK(static_cast<IntegerChromosome*>(c1.get())->size() == 1);
     CHECK(static_cast<IntegerChromosome*>(c1.get())->isValid());
 
-    // Length 2 permutation
+  
     IntegerChromosome pA({1, 2}, 1, 2, true);
     IntegerChromosome pB({2, 1}, 1, 2, true);
     auto [c2A, c2B] = ox.cross(pA, pB, rng);

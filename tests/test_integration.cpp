@@ -23,17 +23,14 @@ using namespace std;
 void testGAEngineCVRPEndToEnd() {
     mt19937 rng(42);
 
-    // CVRP Setup: 5 customers, 2 vehicles -> Giant tour length L = 5 + 2 - 1 = 6
     const int numCustomers = 5;
     const int numVehicles = 2;
     CVRPCodec codec(numCustomers, numVehicles);
 
-    // Demands: index 0 is depot (0), customers 1..5 demand 10 each
     vector<double> demands = {0.0, 10.0, 10.0, 10.0, 10.0, 10.0};
-    const double capacity = 35.0;  // 35 > 30, so any 3-2 split is feasible
+    const double capacity = 35.0;  
     CVRPFeasibilityChecker checker(codec, demands, capacity);
 
-    // Simple distance-like fitness: higher is better.
     FitnessFunction fitnessFn = [&](const Chromosome& chrom) -> double {
         Routes routes;
         if (!codec.tryDecode(chrom, routes)) {
@@ -57,35 +54,32 @@ void testGAEngineCVRPEndToEnd() {
     auto ox = make_shared<OrderCrossover>(config.crossoverRate);
     auto swapMut = make_shared<SwapMutation>(config.mutationRate);
     auto tourney = make_shared<TournamentSelection>(3);
-    auto repl = make_shared<GenerationalReplacement>(1);  // 1 elite
+    auto repl = make_shared<GenerationalReplacement>(1);  
 
     GAEngine engine(config, fitnessFn, feasFn, ox, swapMut, tourney, repl);
 
-    // Initialize population with random CVRP permutations
     Population pop;
     for (int i = 0; i < config.populationSize; ++i) {
         pop.addIndividual(make_unique<IntegerChromosome>(codec.createInteger(rng)));
     }
     CHECK(pop.size() == 20);
 
-    // Run generations
     for (int g = 0; g < config.generations; ++g) {
         engine.step(pop, rng);
 
-        // Invariant: population size remains constant
         CHECK(pop.size() == 20);
 
-        // Invariant: every single individual in the population remains a valid CVRP giant tour!
-        for (size_t i = 0; i < pop.size(); ++i) {
+        
+        for (int i = 0; i < pop.size(); ++i) {
             const auto& ind = pop.getIndividual(i);
             const auto* ic = dynamic_cast<const IntegerChromosome*>(&ind);
             CHECK(ic != nullptr);
             CHECK(ic->isValid());
             CHECK(ic->isPermutation());
-            CHECK(ic->size() == static_cast<size_t>(codec.permutationLength()));
+            CHECK(ic->size() == static_cast<int>(codec.permutationLength()));
 
             Routes r = codec.decode(*ic);
-            CHECK(r.size() == static_cast<size_t>(numVehicles));
+            CHECK(r.size() == static_cast<int>(numVehicles));
         }
     }
 }
@@ -126,12 +120,12 @@ void testGAEngineBinaryKeyEvolution() {
     for (int g = 0; g < config.generations; ++g) {
         engine.step(pop, rng);
         CHECK(pop.size() == 10);
-        for (size_t i = 0; i < pop.size(); ++i) {
+        for (int i = 0; i < pop.size(); ++i) {
             const auto& ind = pop.getIndividual(i);
             const auto* bc = dynamic_cast<const BinaryChromosome*>(&ind);
             CHECK(bc != nullptr);
             Routes r = codec.decode(*bc);
-            CHECK(r.size() == static_cast<size_t>(numVehicles));
+            CHECK(r.size() == static_cast<int>(numVehicles));
         }
     }
 }
