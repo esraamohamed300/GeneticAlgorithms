@@ -8,8 +8,6 @@
 using namespace std;
 
 
-namespace {
-
 unique_ptr<Chromosome> makeIndividual(int value) {
     return make_unique<IntegerChromosome>(vector<int>{value}, 0, 1000);
 }
@@ -28,8 +26,6 @@ int geneOf(const Population& p, int i) {
 
 bool operator==(const Survivor& a, const Survivor& b) {
     return a.fromOffspring == b.fromOffspring && a.index == b.index;
-}
-
 }
 
 void testGenerationalWithElitism() {

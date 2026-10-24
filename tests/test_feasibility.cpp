@@ -7,8 +7,6 @@
 using namespace std;
 
 
-namespace {
-
 CVRPCodec makeCodec() { return CVRPCodec(5, 2); }
 
 vector<double> demands() { return {0, 2, 3, 4, 5, 6}; }
@@ -23,8 +21,6 @@ public:
         return make_unique<OtherChromosome>();
     }
 };
-
-}  // namespace
 
 void testValidAndOverloadedRoutes() {
     auto checker = makeChecker();

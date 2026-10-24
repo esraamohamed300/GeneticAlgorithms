@@ -65,7 +65,7 @@ int TournamentSelection::select(
 }
 
 
-namespace {
+
 
 
 vector<double> buildWheel(const vector<double>& fitness) {
@@ -113,7 +113,7 @@ int spin(
     return index;
 }
 
-}  
+
 
 int RouletteWheelSelection::select(
     const vector<double>& fitness,

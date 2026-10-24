@@ -47,9 +47,7 @@ struct GAResult {
     vector<double> bestFitnessHistory;
 };
 
-namespace detail {
 struct BestTracker;
-}
 
 
 class GAEngine {
@@ -120,5 +118,5 @@ private:
    
     void evolve(Population& population, vector<double>& rawFitness,
                 vector<bool>& feasible, mt19937& rng,
-                detail::BestTracker* tracker);
+                BestTracker* tracker);
 };

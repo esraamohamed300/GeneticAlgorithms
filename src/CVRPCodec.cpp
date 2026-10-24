@@ -6,8 +6,6 @@
 #include <string>
 using namespace std;
 
-namespace {
-
 int ceilLog2(int value) {
     int bits = 0;
     while ((1LL << bits) < value) {
@@ -30,8 +28,6 @@ vector<int> orderByKey(const vector<Key>& keys) {
     }
     return order;
 }
-
-}  
 
 CVRPCodec::CVRPCodec(int numCustomers, int numVehicles, int bitsPerKey)
     : numCustomers_(numCustomers),

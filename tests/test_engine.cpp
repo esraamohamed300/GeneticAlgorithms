@@ -17,8 +17,6 @@
 using namespace std;
 
 
-namespace {
-
 constexpr int kBits = 20;
 constexpr int kMaxOnes = 12;
 
@@ -91,8 +89,6 @@ public:
         return make_unique<OtherChromosome>();
     }
 };
-
-}  
 
 
 

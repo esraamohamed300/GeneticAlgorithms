@@ -10,9 +10,6 @@
 using namespace std;
 
 
-namespace {
-
-
 bool servesEveryCustomerOnce(const Routes& routes, const CVRPCodec& codec) {
     if (static_cast<int>(routes.size()) != codec.numVehicles()) {
         return false;
@@ -38,8 +35,6 @@ Routes padded(Routes routes, int vehicles) {
     routes.resize(static_cast<int>(vehicles));
     return routes;
 }
-
-}  
 
 void testConstructionAndSizes() {
     CVRPCodec codec(7, 3);

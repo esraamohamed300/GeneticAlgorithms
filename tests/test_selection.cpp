@@ -7,8 +7,6 @@
 using namespace std;
 
 
-namespace {
-
 vector<int> countPicks(const SelectionMethod& method,
                             const vector<double>& fitness, int draws,
                             unsigned seed) {
@@ -18,8 +16,6 @@ vector<int> countPicks(const SelectionMethod& method,
         ++counts[method.select(fitness, rng)];
     }
     return counts;
-}
-
 }
 
 void testTournamentFavoursFitter() {

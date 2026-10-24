@@ -7,12 +7,7 @@
 #include <utility>
 using namespace std;
 
-namespace {
-
-
 constexpr double kEpsilon = 1e-9;
-
-}  
 
 string FeasibilityReport::summary() const {
     if (feasible) {

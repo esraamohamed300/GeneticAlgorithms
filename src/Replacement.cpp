@@ -7,9 +7,6 @@
 #include <utility>
 using namespace std;
 
-namespace {
-
-
 vector<int> bestFirst(const vector<double>& fitness) {
     vector<int> order(fitness.size());
     iota(order.begin(), order.end(), int{0});
@@ -20,7 +17,6 @@ vector<int> bestFirst(const vector<double>& fitness) {
     return order;
 }
 
-}  
 
 
 

@@ -19,8 +19,6 @@
 using namespace std;
 
 
-namespace {
-
 bool close(double a, double b, double tolerance = 1e-9) {
     return fabs(a - b) <= tolerance;
 }
@@ -54,8 +52,6 @@ void build(const CVRPInstance& instance) {
     CVRPFitnessEvaluator evaluator(instance);
     (void)evaluator;
 }
-
-}  
 
 void testRouteDistanceByHand() {
     CVRPFitnessEvaluator ev(smallInstance());

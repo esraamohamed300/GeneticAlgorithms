@@ -14,9 +14,6 @@
 
 using namespace std;
 
-namespace detail {
-
-
 struct BestTracker {
     unique_ptr<Chromosome> best;
     double fitness = 0.0;
@@ -36,10 +33,6 @@ struct BestTracker {
     }
 };
 
-}  
-
-namespace {
-
 constexpr double kRateTolerance = 1e-12;
 
 void requireSameRate(const char* what, double operatorRate, double configRate) {
@@ -56,8 +49,6 @@ void requireSameRate(const char* what, double operatorRate, double configRate) {
 bool policyUsesFeasibility(const GAConfig& config) {
     return config.infeasibilityPolicy != InfeasibilityPolicy::None;
 }
-
-}  
 
 
 
@@ -236,7 +227,7 @@ void GAEngine::evaluate(const Chromosome& individual, bool needFeasibility,
 
 void GAEngine::evolve(Population& population, vector<double>& rawFitness,
                       vector<bool>& feasible, mt19937& rng,
-                      detail::BestTracker* tracker) {
+                      BestTracker* tracker) {
     const int popSize = population.size();
 
     const bool haveFeasibility = static_cast<bool>(feasibilityFunction);
@@ -391,7 +382,7 @@ GAResult GAEngine::run(Population& population, mt19937& rng,
 
     const bool needFeasibility = static_cast<bool>(feasibilityFunction);
 
-    detail::BestTracker tracker;
+    BestTracker tracker;
     GAResult result;
 
     vector<double> rawFitness(population.size());

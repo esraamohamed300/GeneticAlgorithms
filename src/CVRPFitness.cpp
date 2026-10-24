@@ -7,9 +7,6 @@
 #include <utility>
 using namespace std;
 
-namespace {
-
-
 CVRPInstance prepareInstance(CVRPInstance instance, double penaltyMultiplier) {
     if (instance.numCustomers < 1) {
         throw invalid_argument(
@@ -80,7 +77,6 @@ CVRPInstance prepareInstance(CVRPInstance instance, double penaltyMultiplier) {
     return instance;
 }
 
-}  
 
 CVRPFitnessEvaluator::CVRPFitnessEvaluator(CVRPInstance instance,
                                            double penaltyMultiplier)

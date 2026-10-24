@@ -5,7 +5,6 @@
 #include <stdexcept>
 using namespace std;
 
-namespace testutil {
 inline int& failures() {
     static int count = 0;
     return count;
@@ -14,13 +13,12 @@ inline int& checks() {
     static int count = 0;
     return count;
 }
-}  
 
 #define CHECK(cond)                                                          \
     do {                                                                     \
-        ++testutil::checks();                                                \
+        ++checks();                                                          \
         if (!(cond)) {                                                       \
-            ++testutil::failures();                                          \
+            ++failures();                                                    \
             cerr << "FAILED " << __FILE__ << ":" << __LINE__ << "  "    \
                       << #cond << '\n';                                      \
         }                                                                    \
@@ -29,7 +27,7 @@ inline int& checks() {
 
 #define CHECK_THROWS(expr, ExceptionType)                                    \
     do {                                                                     \
-        ++testutil::checks();                                                \
+        ++checks();                                                          \
         bool threw_ = false;                                                 \
         try {                                                                \
             expr;                                                            \
@@ -38,7 +36,7 @@ inline int& checks() {
         } catch (...) {                                                      \
         }                                                                    \
         if (!threw_) {                                                       \
-            ++testutil::failures();                                          \
+            ++failures();                                                    \
             cerr << "FAILED " << __FILE__ << ":" << __LINE__            \
                       << "  expected " #ExceptionType " from: " #expr        \
                       << '\n';                                               \
@@ -47,15 +45,15 @@ inline int& checks() {
 
 #define RUN_TEST(fn)                                                         \
     do {                                                                     \
-        const int before_ = testutil::failures();                            \
+        const int before_ = failures();                                      \
         fn();                                                                \
-        cout << (testutil::failures() == before_ ? "[ OK ] "            \
-                                                      : "[FAIL] ")           \
+        cout << (failures() == before_ ? "[ OK ] "                      \
+                                              : "[FAIL] ")                   \
                   << #fn << endl;                                       \
     } while (false)
 
 inline int finishTests() {
-    cout << testutil::checks() << " checks, " << testutil::failures()
+    cout << checks() << " checks, " << failures()
               << " failed\n";
-    return testutil::failures() == 0 ? 0 : 1;
+    return failures() == 0 ? 0 : 1;
 }
